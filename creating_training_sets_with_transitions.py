@@ -61,7 +61,7 @@ with open(cleaned_raw_filename, 'r') as raw:
 # In[ ]:
 
 binary = pd.read_csv(training_output_tertiary_filename, sep="~")
-binary[binary["transition_value"] != 0] = 1
+binary.loc[binary["transition_value"] != 0, "transition_value"] = 1
 binary.to_csv(training_output_binary_filename, sep="~", index=False)
 
 

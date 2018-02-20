@@ -78,7 +78,7 @@ upleveled.head()
 # In[ ]:
 
 bill_start_times = upleveled.sort_values(["video_id", "bill_id", "speaker_start_time"]).groupby(["bill_id", "hearing_id", "video_id"]).head(1)
-bill_end_times = upleveled.sort_values(["video_id", "bill_id", "speaker_start_time"]) .groupby(["bill_id", "hearing_id", "video_id"]).tail(1)
+bill_end_times = upleveled.sort_values(["video_id", "bill_id", "speaker_start_time"]).groupby(["bill_id", "hearing_id", "video_id"]).tail(1)
 bill_start_end_times = pd.merge(bill_start_times[["bill_id", "video_id", "speaker_start_time"]],
                                 bill_end_times[["bill_id", "video_id", "speaker_end_time"]],
                                 on=["bill_id", "video_id"])
