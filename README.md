@@ -8,4 +8,20 @@ Takes original raw transcripts and upleveled transcripts from data/original/ and
 
 ## create_training_set_with_transitions.py
 
-Generates the training set by appending a 0, 1, or 2 to data/cleaned/raw.csv.  A 0 means the utterance is not a transition to a new bill, a 1 means the utterance starts a bill discussion, and a 2 means the utterance ends a bill discussion.  This training set is output to data/training/training_utterances_binary.csv.
+Generates the training sets by appending a column called 'transition_value' to training_data/cleaned/raw.csv.  The following training sets are generated:
+
+#### training_utterances_binary.csv
+
+Utterances are marked with a 1 if they are a transition and a 0 if they are not.
+
+#### training_utterances_tertiary.csv
+
+Utterances are marked with a 1 if they are the start of a bill, 2 if they are the end of a bill, and 0 otherwise.
+
+#### training_utterances_n_range.csv
+
+Utterances are marked with a 1 if they are within an n utterance range of a transition, and 0 otherwise.
+
+#### training_utterances_n_range_collapsed.csv
+
+All utterances within a "transition range" (within n utterances of a transition) are collapsed into a single utterance, marked with 1.  All other utterances are marked with 0.
