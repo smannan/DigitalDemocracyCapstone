@@ -18,8 +18,8 @@ original_upleveled_filename = "data/original/upleveled.txt"
 original_upleveled_sorted_filename = "data/original/upleveled_sorted.csv"
 cleaned_raw_filename = "data/cleaned/raw.csv"
 cleaned_upleveled_filename = "data/cleaned/upleveled.csv"
-bill_start_end_times_filename = "data/cleaned/bill_start_end_times.csv"
-
+bill_start_end_times_all_filename = "data/cleaned/bill_start_end_times_all.csv"
+bill_start_end_times_longest_filename = "data/cleaned/bill_start_end_times_longest.csv"
 
 # # Raw Processing
 
@@ -119,15 +119,16 @@ bill_end_times = tagged_upleveled.groupby(["bill_change_tag"]).tail(1)
 bill_start_end_times = pd.merge(bill_start_times[["bill_id", "hearing_id", "video_id", "speaker_start_time", "bill_change_tag"]],
                                 bill_end_times[["speaker_end_time", "bill_change_tag"]],
                                 on=["bill_change_tag"]).drop(["bill_change_tag"], axis=1)
-
 bill_start_end_times["length"] = bill_start_end_times["speaker_end_time"] - bill_start_end_times["speaker_start_time"]
+bill_start_end_times = bill_start_end_times.sort_values(["video_id", "speaker_start_time"])
 
 
 # In[ ]:
 
 longest_bill_discussions = bill_start_end_times.sort_values(["bill_id", "length"]).groupby(["bill_id"]).tail(1)
-
+longest_bill_discussions = longest_bill_discussions.sort_values(["video_id", "speaker_start_time"])
 
 # In[ ]:
 
-longest_bill_discussions.to_csv(bill_start_end_times_filename, sep="~", index=False)
+bill_start_end_times.to_csv(bill_start_end_times_all_filename, sep="~", index=False)
+longest_bill_discussions.to_csv(bill_start_end_times_longest_filename, sep="~", index=False)
