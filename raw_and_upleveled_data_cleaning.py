@@ -13,8 +13,9 @@ from bs4 import BeautifulSoup
 
 # In[ ]:
 
-original_raw_filename = "data/original/raw_sample1.csv"
-original_upleveled_filename = "data/original/upleveled.csv"
+original_raw_filename = "data/original/raw.txt"
+original_upleveled_filename = "data/original/upleveled.txt"
+original_upleveled_sorted_filename = "data/original/upleveled_sorted.csv"
 cleaned_raw_filename = "data/cleaned/raw.csv"
 cleaned_upleveled_filename = "data/cleaned/upleveled.csv"
 bill_start_end_times_filename = "data/cleaned/bill_start_end_times.csv"
@@ -72,9 +73,9 @@ cleaned_raw.head()
 
 # In[ ]:
 
-upleveled = pd.read_table(original_upleveled_filename, sep='~', engine='python')
-upleveled = upleveled.sort_values(["video_id", "hearing_id", "speaker_start_time"]).drop(["Unnamed: 0"], axis=1)
-upleveled.to_csv(original_upleveled_filename, sep="~", index=False)
+upleveled = pd.read_table(original_upleveled_filename, sep='~~~~~', engine='python')
+upleveled = upleveled.sort_values(["video_id", "hearing_id", "speaker_start_time"])
+upleveled.to_csv(original_upleveled_sorted_filename, sep="~", index=False)
 
 
 # In[ ]:
@@ -97,7 +98,7 @@ def tag_bill_change_lines(original, cleaned):
 
 # In[ ]:
 
-with open(original_upleveled_filename, 'r') as original:
+with open(original_upleveled_sorted_filename, 'r') as original:
     with open(cleaned_upleveled_filename, 'w') as cleaned:
         #consume/write headings
         h = original.readline()
@@ -130,4 +131,3 @@ longest_bill_discussions = bill_start_end_times.sort_values(["bill_id", "length"
 # In[ ]:
 
 longest_bill_discussions.to_csv(bill_start_end_times_filename, sep="~", index=False)
-
