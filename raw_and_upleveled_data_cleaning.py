@@ -15,7 +15,9 @@ from bs4 import BeautifulSoup
 
 original_raw_filename = "data/original/raw.txt"
 original_upleveled_filename = "data/original/upleveled.txt"
+original_upleveled_sorted_filename = "data/original/upleveled_sorted.csv"
 cleaned_raw_filename = "data/cleaned/raw.csv"
+cleaned_upleveled_filename = "data/cleaned/upleveled.csv"
 bill_start_end_times_filename = "data/cleaned/bill_start_end_times.csv"
 
 
@@ -72,20 +74,60 @@ cleaned_raw.head()
 # In[ ]:
 
 upleveled = pd.read_table(original_upleveled_filename, sep='~~~~~', engine='python')
-upleveled.head()
+upleveled = upleveled.sort_values(["video_id", "hearing_id", "speaker_start_time"])
+upleveled.to_csv(original_upleveled_sorted_filename, sep="~", index=False)
 
 
 # In[ ]:
 
-bill_start_times = upleveled.sort_values(["video_id", "bill_id", "speaker_start_time"]).groupby(["bill_id", "hearing_id", "video_id"]).head(1)
-bill_end_times = upleveled.sort_values(["video_id", "bill_id", "speaker_start_time"]).groupby(["bill_id", "hearing_id", "video_id"]).tail(1)
-bill_start_end_times = pd.merge(bill_start_times[["bill_id", "video_id", "speaker_start_time"]],
-                                bill_end_times[["bill_id", "video_id", "speaker_end_time"]],
-                                on=["bill_id", "video_id"])
+def tag_bill_change_lines(original, cleaned):
+    line = original.readline()
+    current_bill_id = line.split("~")[0]
+    i = 0
+    cleaned.write(line.rstrip("\n") + "~0\n")
+    
+    for line in original:
+        line_splits = line.split("~")
+        
+        if (line_splits[0] != current_bill_id):
+            current_bill_id = line_splits[0]
+            i += 1
+        
+        cleaned.write(line.rstrip("\n") + "~" + str(i) + "\n")
 
 
 # In[ ]:
 
-bill_start_end_times.sort_values(["video_id", "speaker_start_time"]).to_csv(bill_start_end_times_filename, sep="~", index=False)
-bill_start_end_times.head()
+with open(original_upleveled_sorted_filename, 'r') as original:
+    with open(cleaned_upleveled_filename, 'w') as cleaned:
+        #consume/write headings
+        h = original.readline()
+        cleaned.write(h.rstrip("\n") + "~bill_change_tag\n")
+            
+        tag_bill_change_lines(original, cleaned)
 
+
+# In[ ]:
+
+tagged_upleveled = pd.read_table(cleaned_upleveled_filename, sep='~')
+
+
+# In[ ]:
+
+bill_start_times = tagged_upleveled.groupby(["bill_change_tag"]).head(1)
+bill_end_times = tagged_upleveled.groupby(["bill_change_tag"]).tail(1)
+bill_start_end_times = pd.merge(bill_start_times[["bill_id", "hearing_id", "video_id", "speaker_start_time", "bill_change_tag"]],
+                                bill_end_times[["speaker_end_time", "bill_change_tag"]],
+                                on=["bill_change_tag"]).drop(["bill_change_tag"], axis=1)
+
+bill_start_end_times["length"] = bill_start_end_times["speaker_end_time"] - bill_start_end_times["speaker_start_time"]
+
+
+# In[ ]:
+
+longest_bill_discussions = bill_start_end_times.sort_values(["bill_id", "length"]).groupby(["bill_id"]).tail(1)
+
+
+# In[ ]:
+
+longest_bill_discussions.to_csv(bill_start_end_times_filename, sep="~", index=False)
