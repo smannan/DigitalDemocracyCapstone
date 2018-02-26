@@ -13,13 +13,33 @@ from bs4 import BeautifulSoup
 
 # In[ ]:
 
-original_raw_filename = "data/original/raw.txt"
-original_upleveled_filename = "data/original/upleveled.txt"
-original_upleveled_sorted_filename = "data/original/upleveled_sorted.csv"
-cleaned_raw_filename = "data/cleaned/raw.csv"
-cleaned_upleveled_filename = "data/cleaned/upleveled.csv"
-bill_start_end_times_all_filename = "data/cleaned/bill_start_end_times_all.csv"
-bill_start_end_times_longest_filename = "data/cleaned/bill_start_end_times_longest.csv"
+original_raw_filename = "UNDEFINED"
+original_upleveled_filename = "UNDEFINED"
+original_upleveled_sorted_filename = "UNDEFINED"
+cleaned_raw_filename = "UNDEFINED"
+cleaned_upleveled_filename = "UNDEFINED"
+bill_start_end_times_all_filename = "UNDEFINED"
+bill_start_end_times_longest_filename = "UNDEFINED"
+
+with open("CONSTANTS") as constants_file:
+    for line in constants_file:
+        line_splits = line.rstrip("\n").split("=")
+        
+        if (line_splits[0] == "ORIGINAL_RAW"):
+            original_raw_filename = line_splits[1]
+        elif (line_splits[0] == "ORIGINAL_UPLEVELED"):
+            original_upleveled_filename = line_splits[1]
+        elif (line_splits[0] == "ORIGINAL_UPLEVELED_SORTED"):
+            original_upleveled_sorted_filename = line_splits[1]
+        elif (line_splits[0] == "CLEANED_RAW"):
+            cleaned_raw_filename = line_splits[1]
+        elif (line_splits[0] == "CLEANED_UPLEVELED"):
+            cleaned_upleveled_filename = line_splits[1]
+        elif (line_splits[0] == "BILL_START_END_TIMES_ALL"):
+            bill_start_end_times_all_filename = line_splits[1]
+        elif (line_splits[0] == "BILL_START_END_TIMES_LONGEST"):
+            bill_start_end_times_longest_filename = line_splits[1]
+            
 
 # # Raw Processing
 
