@@ -8,14 +8,35 @@ import pandas as pd
 
 # In[ ]:
 
-cleaned_raw_filename = "data/cleaned/raw.csv"
-bill_start_end_times_filename = "data/cleaned/bill_start_end_times_longest.csv"
+#constants
+cleaned_raw_filename = "UNDEFINED"
+training_output_binary_filename = "UNDEFINED"
+training_output_n_range_filename = "UNDEFINED"
+training_output_n_range_collapsed_filename = "UNDEFINED"
 
-#training_output_tertiary_filename = "data/training/training_utterances_tertiary.csv"
-training_output_binary_filename = "data/training/training_utterances_binary.csv"
-training_output_n_range_filename = "data/training/training_utterances_n_range.csv"
-training_output_n_range_collapsed_filename = "data/training/training_utterances_n_range_collapsed.csv"
+#configurable values
+bill_start_end_times_filename = "UNDEFINED"
 
+with open("CONSTANTS") as constants_file:
+    for line in constants_file:
+        line_splits = line.rstrip("\n").split("=")
+        
+        if (line_splits[0] == "CLEANED_RAW"):
+            cleaned_raw_filename = line_splits[1]
+        elif (line_splits[0] == "TRAINING_BINARY"):
+            training_output_binary_filename = line_splits[1]
+        elif (line_splits[0] == "TRAINING_N_RANGE"):
+            training_output_n_range_filename = line_splits[1]
+        elif (line_splits[0] == "TRAINING_N_RANGE_COLLAPSED"):
+            training_output_n_range_collapsed_filename = line_splits[1]
+            
+with open("CONFIG") as config_file:
+    for line in config_file:
+        line_splits= line.rstrip("\n").split("=")
+        
+        if (line_splits[0] == "BILL_START_END_TIMES"):
+            bill_start_end_times_filename = line_splits[1]
+            
 
 # # Mark Transition Lines (Binary)
 
@@ -84,9 +105,9 @@ n_range = pd.read_csv(training_output_binary_filename, sep="~")
 transition_indexes = n_range.index[n_range["transition_value"] == 1].tolist()
 new_transition_indexes = []
 
-length = len(transition_indexes)
+length = len(n_range)
 for i in transition_indexes:
-    for x in range(-n, n):
+    for x in range(-n, n+1):
         if (i + x >= 0 and i + x < length):
             new_transition_indexes.append(i + x)
 
