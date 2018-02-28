@@ -162,33 +162,33 @@ def shift_words_over(words, word_ix, shift_amount):
 # In[ ]:
 
 def replace_bill_ids_in_utterance(utterance, t1, t2, t3, t4):
-    words = utterance.split()
+    words = utterance.lower().split()
     utterance_length = len(words)
     word_ix = 0
     while(word_ix < utterance_length):
-        if (matches_any_1_word_pattern(words[word_ix].lower())):
+        if (matches_any_1_word_pattern(words[word_ix])):
             words[word_ix] = "<BILL_ID>"
             t1 += 1
         elif (word_ix < (utterance_length-1) and
-              matches_any_2_word_pattern(words[word_ix].lower(),
-                                         words[word_ix+1].lower())):
+              matches_any_2_word_pattern(words[word_ix],
+                                         words[word_ix+1])):
             words[word_ix] = "<BILL_ID>"
             words = shift_words_over(words, word_ix+1, 1)
             utterance_length -= 1
             t2 += 1
         elif (word_ix < (utterance_length-2) and
-              matches_any_3_word_pattern(words[word_ix].lower(),
-                                         words[word_ix+1].lower(),
-                                         words[word_ix+2].lower())):
+              matches_any_3_word_pattern(words[word_ix],
+                                         words[word_ix+1],
+                                         words[word_ix+2])):
             words[word_ix] = "<BILL_ID>"
             words = shift_words_over(words, word_ix+1, 2)
             utterance_length -= 2
             t3 += 1
         elif (word_ix < (utterance_length-3) and
-              matches_any_4_word_pattern(words[word_ix].lower(),
-                                         words[word_ix+1].lower(),
-                                         words[word_ix+2].lower(),
-                                         words[word_ix+3].lower())):
+              matches_any_4_word_pattern(words[word_ix],
+                                         words[word_ix+1],
+                                         words[word_ix+2],
+                                         words[word_ix+3])):
             words[word_ix] = "<BILL_ID>"
             words = shift_words_over(words, word_ix+1, 3)
             utterance_length -= 3
@@ -213,6 +213,7 @@ def replace_bill_ids(old, new):
         (new_text, t1, t2, t3, t4) = replace_bill_ids_in_utterance(line_splits[2], t1, t2, t3, t4)
         
         new.write(line_splits[0] + "~" + line_splits[1] + "~" + new_text + "~" + line_splits[3] + "\n")
+    
 
 
 # In[ ]:
