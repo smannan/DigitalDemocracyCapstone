@@ -1,1 +1,2 @@
-BILL_START_END_TIMES=data/cleaned/bill_start_end_times_longest.csv
+WHICH_CLEANED_RAW=data/cleaned/raw_bill_id_replaced.csv
+WHICH_BILL_START_END_TIMES=data/cleaned/bill_start_end_times_longest.csv
