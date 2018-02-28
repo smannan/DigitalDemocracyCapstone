@@ -65,7 +65,7 @@ def mark_transition_lines(raw, bill_times, out):
             else:
                 bill_times_splits = bill_line.split("~")
             
-        out.write(line.rstrip('\n') + "~" + str(transition_value))
+        out.write(line.rstrip('\n') + "~" + str(transition_value) + "\n")
 
 
 # In[ ]:
