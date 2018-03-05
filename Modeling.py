@@ -1,7 +1,7 @@
 
 # coding: utf-8
 
-# In[222]:
+# In[1]:
 
 import numpy as np
 import pandas as pd
@@ -12,18 +12,18 @@ from sklearn.model_selection import train_test_split
 from sklearn.naive_bayes import MultinomialNB
 
 
-# In[223]:
+# In[2]:
 
-data_dir = "/Users/soniamannan/Documents/DATA401/capstone/DigitalDemocracyCapstone/data/training/"
+data_dir = "/Users/soniamannan/Documents/DATA401/capstone/DigitalDemocracyCapstone/data/"
 target_col = 'transition_value'
 
 
-# In[224]:
+# In[3]:
 
-training_output_filename = data_dir + "training_utterances_n_range.csv"
+training_output_filename = data_dir + "training/training_utterances_binary.csv"
 
 
-# In[225]:
+# In[4]:
 
 # split dataset evenly based on labels
 def split_test_train(total, stratify_col):
@@ -66,27 +66,88 @@ def split_test_train(total, stratify_col):
     
 
 
-# In[226]:
+# In[5]:
 
-train = pd.read_table(training_output_filename, sep="~")[['text', target_col]]
+# extract bag of words features from text for a model
+def bag_of_words_features(x_train, x_test):
+    count_vect = CountVectorizer()
+    count_vect.fit(np.hstack((x_train)))
+    X_train_counts = count_vect.transform(x_train)
+    X_test_counts = count_vect.transform(x_test)
+    
+    assert X_train_counts.shape[1] == X_test_counts.shape[1]
+    
+    return X_train_counts, X_test_counts
 
 
-# In[227]:
+# In[6]:
 
-len(np.unique(train['transition_value']))
+# output accuracy for a naive bayes model
+# return the trained model
+def model(X_train_counts, X_test_counts, y_train, y_test):
+    clf = MultinomialNB()
+    clf.fit(X_train_counts, y_train)
+    
+    assert X_test_counts.shape[0] == y_test.shape[0]
+    
+    acc = clf.score(X_test_counts, y_test, sample_weight=None)
+    print("Model accuracy {0}".format(acc))
+    
+    return clf
 
 
-# In[228]:
+# In[7]:
+
+def remove_transcript(train, n):
+    total = len(np.unique(train['video_id']))
+    ids = np.unique(train['video_id'])[:n]
+    rows = train[train['video_id'].isin(ids)]
+    train = train[~(train['video_id'].isin(ids))]
+    
+    assert len(np.unique(rows['video_id'])) == n
+    assert len(np.unique(train['video_id'])) == total - n
+    
+    return train, rows
+
+
+# ### Read in data
+
+# In[8]:
+
+train = pd.read_table(training_output_filename, sep="~")[['text', target_col, 'video_id']]
+
+
+# In[9]:
+
+print("Number of transitions in the dataset {0}".format(len(train[train['transition_value'] != 0])))
+
+
+# In[10]:
 
 train.head()
 
 
-# In[229]:
+# ### Remove top 5 videos from dataset
 
-x_train, x_test, y_train, y_test = split_test_train(train, target_col)
+# In[11]:
+
+train, transcripts = remove_transcript(train, 5)
 
 
-# In[230]:
+# In[12]:
+
+print("Number of transitions in dataset after removing top 5 transcripts {0}"
+.format(len(train[train['transition_value'] != 0])))
+
+
+# ### Split into training and testing sets
+
+# In[13]:
+
+x_train, x_test, y_train, y_test = split_test_train(train[['text', target_col]], target_col)
+
+
+# In[14]:
 
 transition_rows = train[train[target_col] != 0]
 
@@ -96,196 +157,193 @@ transition_rows = train[train[target_col] != 0]
 # ### training dimensions should be 2 * 70% of the number of transitions in the data set
 # ### testing dimensions should be 2 * 30% of the number of transitions in the data set
 
-# In[231]:
+# In[15]:
 
 assert len(x_train) == len(y_train)
 
 
-# In[232]:
+# In[16]:
 
 assert len(x_test) == len(y_test)
 
 
-# In[233]:
+# In[17]:
 
 assert len(x_train) == int(len(transition_rows) * 0.7) * 2
 
 
-# In[234]:
+# In[18]:
 
 assert len(x_test) == (len(transition_rows) * 2) - (int(len(transition_rows) * 0.7) * 2)
 
 
-# In[235]:
+# In[19]:
 
 assert len(y_train[y_train == 0]) == len(y_train[y_train != 0])
 
 
-# In[236]:
+# In[20]:
 
 assert len(y_test[y_test == 0]) == len(y_test[y_test != 0])
 
 
-# In[237]:
+# In[21]:
 
 print ("{0}% of utterances are transitions".format((sum(y_train) / len(x_train)) * 100))
 
 
-# In[238]:
+# In[22]:
 
 x_train.head()
 
 
 # ### Vectorize utterances with bag of words features
 
-# In[239]:
-
-count_vect = CountVectorizer()
-count_vect.fit(np.hstack((x_train)))
-X_train_counts = count_vect.transform(x_train)
-X_test_counts = count_vect.transform(x_test)
-
-
-# In[240]:
-
-assert X_train_counts.shape[1] == X_test_counts.shape[1]
-
-
 # ### Pass vectorized utterances into a Naive Bayes model
-
-# In[241]:
-
-clf = MultinomialNB()
-clf.fit(X_train_counts, y_train)
-
 
 # ### Output accuracy on testing set
 
-# In[242]:
+# In[23]:
 
-assert X_test_counts.shape[0] == y_test.shape[0]
+X_train_counts, X_test_counts = bag_of_words_features(x_train, x_test)
+bag_of_words_model = model(X_train_counts, X_test_counts, y_train, y_test)
 
 
-# In[243]:
+# In[24]:
 
-clf.score(X_test_counts, y_test, sample_weight=None)
+def compare_predicted_to_actual(clf, X_test_counts, x_test, y_test, outfilename):
+    # get predicted values
+    preds = clf.predict(X_test_counts)
+    
+    print("% predictions that were 1's {0}\n".format(sum(preds) / len(preds)))
+    
+    # add predicted values to original dataframe
+    total = pd.concat([x_test, y_test], axis=1)
+    total['predicted'] = preds
+    
+    # get the incorrect predictions and write to a csv
+    wrongs = total[total['transition_value'] != total['predicted']]
+    wrongs.to_csv(outfilename)
+    
+    print ("Example of an incorrect transition\n")
+    print (list(wrongs['text'])[0])
+    print ("Actual {0}".format(list(wrongs['transition_value'])[0]))
+    print ("Predicted {0}".format(list(wrongs['predicted'])[0]))
+    
+    return wrongs
 
 
 # ### Look at what the wrong predictions actually are
 
-# In[250]:
+# In[25]:
 
-preds = clf.predict(X_test_counts)
-
-
-# In[251]:
-
-total = pd.concat([x_test, y_test], axis=1)
-total.head()
-
-
-# In[252]:
-
-total['predicted'] = preds
-
-
-# In[253]:
-
-total.head()
-
-
-# In[259]:
-
-wrongs = total[total['transition_value'] != total['predicted']]
-wrongs
-
-
-# In[255]:
-
-sum(preds) / len(preds)
+wrongs = compare_predicted_to_actual(bag_of_words_model, X_test_counts, 
+ x_test, y_test, data_dir+'predictions/wrong_predictions.csv')
 
 
 # ### Vectorize utterances with tf-idf
 
-# In[119]:
+# In[26]:
 
-transformer = TfidfTransformer(smooth_idf=True)
-Xtrain_tfidf = transformer.fit_transform(X_train_counts)
-Xtest_tfidf = transformer.fit_transform(X_test_counts)
-
-
-# In[120]:
-
-assert Xtrain_tfidf.shape[1] == Xtest_tfidf.shape[1]
-
-
-# In[121]:
-
-clf = MultinomialNB()
-clf.fit(Xtrain_tfidf, y_train)
+def transform_tfidf(x_train, x_test):
+    X_train_counts, X_test_counts = bag_of_words_features(x_train, x_test)
+    
+    transformer = TfidfTransformer(smooth_idf=True)
+    Xtrain_tfidf = transformer.fit_transform(X_train_counts)
+    Xtest_tfidf = transformer.fit_transform(X_test_counts)
+    
+    assert Xtrain_tfidf.shape[1] == Xtest_tfidf.shape[1]
+    
+    return Xtrain_tfidf, Xtest_tfidf
 
 
-# In[122]:
+# In[27]:
 
-assert Xtest_tfidf.shape[0] == y_test.shape[0]
+Xtrain_tfidf, Xtest_tfidf = transform_tfidf(x_train, x_test)
 
 
-# In[123]:
+# In[28]:
 
-clf.score(Xtest_tfidf, y_test, sample_weight=None)
+tf_idf_model = model(Xtrain_tfidf, Xtest_tfidf, y_train, y_test)
 
 
 # ### Vectorize utterances with n-gram features
 # ### Best accuracy when combining unigram and bigrams
 
-# In[82]:
+# In[29]:
 
-ngram_vectorizer = CountVectorizer(analyzer='word', ngram_range=(1, 2))
-counts = ngram_vectorizer.fit(np.hstack((x_train)))
-
-
-# In[83]:
-
-len(ngram_vectorizer.get_feature_names())
-
-
-# In[84]:
-
-ngram_vectorizer.get_feature_names()[-10:]
-
-
-# In[85]:
-
-X_train_counts = counts.transform(x_train)
-X_test_counts = counts.transform(x_test)
+def transform_ngram(start, stop, x_train, x_test):
+    ngram_vectorizer = CountVectorizer(analyzer='word', ngram_range=(start, stop))
+    counts = ngram_vectorizer.fit(np.hstack((x_train)))
+    
+    print ("Number of transformed features {0}\n"
+     .format(len(ngram_vectorizer.get_feature_names())))
+    
+    print ("First 10 features\n{0}"
+     .format('\n'.join(ngram_vectorizer.get_feature_names()[-10:])))
+    
+    X_train_counts = counts.transform(x_train)
+    X_test_counts = counts.transform(x_test)
+    
+    assert X_train_counts.shape[1] == X_test_counts.shape[1]
+    
+    return X_train_counts, X_test_counts
 
 
-# In[86]:
+# In[30]:
 
-assert X_train_counts.shape[1] == X_test_counts.shape[1]
-
-
-# In[87]:
-
-clf = MultinomialNB()
-clf.fit(X_train_counts, y_train)
+X_train_ngram_counts, X_test_ngram_counts = transform_ngram(1, 2, x_train, x_test)
 
 
-# ### Output accuracy
+# In[31]:
 
-# In[88]:
-
-assert X_test_counts.shape[0] == y_test.shape[0]
+ngram_model = model(X_train_ngram_counts, X_test_ngram_counts, y_train, y_test)
 
 
-# In[89]:
+# ### For utterances in a transcript, tag what the model predicts the utterance to be
 
-clf.score(X_test_counts, y_test, sample_weight=None)
+# In[42]:
+
+def predict_entire_transcript(transcripts, x_train, x_test, y_train, y_test):
+    print("{0}\n".format(transcripts.head()))
+    
+    count_vect = CountVectorizer()
+    count_vect.fit(np.hstack((x_train)))
+    transcripts_test = count_vect.transform(transcripts['text'])
+    label = transcripts['transition_value']
+    
+    X_train_counts, X_test_counts = bag_of_words_features(x_train, x_test)
+    bag_of_words_model = model(X_train_counts, X_test_counts, y_train, y_test)
+    
+    preds = bag_of_words_model.predict(transcripts_test)
+    
+    assert len(preds) == transcripts_test.shape[0]
+    
+    return preds
+
+
+# In[47]:
+
+preds = predict_entire_transcript(transcripts, x_train, x_test, y_train, y_test)
+
+
+# In[50]:
+
+res = transcripts.copy()
+res['predicted'] = preds
+res['actual'] = transcripts['transition_value']
+res = res.drop(['transition_value'], axis=1)
+res.head()
+
+
+# In[51]:
+
+res.to_csv('/Users/soniamannan/Documents/DATA401/capstone/DigitalDemocracyCapstone/data/predictions/binary_predicted_transcript.csv')
 
 
 # ### Use WordNet features
 
-# In[90]:
+# In[52]:
 
 # replace words in an utterance with their synset
 def get_synset_from_text(utterance):
@@ -299,25 +357,25 @@ def get_synset_from_text(utterance):
 
 # ### Replace words with their synsets
 
-# In[91]:
+# In[139]:
 
 x_train_word_net = [get_synset_from_text(x) for x in x_train]
 x_test_word_net = [get_synset_from_text(x) for x in x_test]
 
 
-# In[92]:
+# In[140]:
 
 x_train_word_net[0]
 
 
-# In[93]:
+# In[141]:
 
 x_test_word_net[0]
 
 
 # ### Vectorize synsets with bag of words
 
-# In[332]:
+# In[142]:
 
 count_vect = CountVectorizer()
 count_vect.fit(np.hstack((x_train)))
@@ -325,14 +383,14 @@ X_train_counts = count_vect.transform(x_train)
 X_test_counts = count_vect.transform(x_test)
 
 
-# In[333]:
+# In[143]:
 
 assert X_train_counts.shape[1] == X_test_counts.shape[1]
 
 
 # ### Train classifier
 
-# In[334]:
+# In[144]:
 
 clf = MultinomialNB()
 clf.fit(X_train_counts, y_train)
@@ -340,19 +398,19 @@ clf.fit(X_train_counts, y_train)
 
 # ### Get accuracy
 
-# In[335]:
+# In[145]:
 
 assert X_test_counts.shape[0] == y_test.shape[0]
 
 
-# In[336]:
+# In[146]:
 
 clf.score(X_test_counts, y_test, sample_weight=None)
 
 
 # ### Sample utterance and synset
 
-# In[223]:
+# In[28]:
 
 utterance = 'SB 1008 would extend the current CEQA exemption deadline for'
 for word in utterance.split():
@@ -360,6 +418,7 @@ for word in utterance.split():
     syn = wordnet.synsets(word)
     lemmas = set([s.lemmas()[0].name() for s in syn])
     print (lemmas)
+    print (syn)
     utterance = utterance.replace(word, ' '.join(lemmas))
 print (utterance)
 
