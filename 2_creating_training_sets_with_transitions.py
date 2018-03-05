@@ -9,21 +9,19 @@ import pandas as pd
 # In[ ]:
 
 #constants
-cleaned_raw_filename = "UNDEFINED"
 training_output_binary_filename = "UNDEFINED"
 training_output_n_range_filename = "UNDEFINED"
 training_output_n_range_collapsed_filename = "UNDEFINED"
 
 #configurable values
+cleaned_raw_filename = "UNDEFINED"
 bill_start_end_times_filename = "UNDEFINED"
 
 with open("CONSTANTS") as constants_file:
     for line in constants_file:
         line_splits = line.rstrip("\n").split("=")
         
-        if (line_splits[0] == "CLEANED_RAW"):
-            cleaned_raw_filename = line_splits[1]
-        elif (line_splits[0] == "TRAINING_BINARY"):
+        if (line_splits[0] == "TRAINING_BINARY"):
             training_output_binary_filename = line_splits[1]
         elif (line_splits[0] == "TRAINING_N_RANGE"):
             training_output_n_range_filename = line_splits[1]
@@ -34,12 +32,13 @@ with open("CONFIG") as config_file:
     for line in config_file:
         line_splits= line.rstrip("\n").split("=")
         
-        if (line_splits[0] == "BILL_START_END_TIMES"):
+        if (line_splits[0] == "WHICH_CLEANED_RAW"):
+            cleaned_raw_filename = line_splits[1]
+        elif (line_splits[0] == "WHICH_BILL_START_END_TIMES"):
             bill_start_end_times_filename = line_splits[1]
-            
+
 
 # # Mark Transition Lines (Binary)
-
 
 # In[ ]:
 
@@ -66,7 +65,7 @@ def mark_transition_lines(raw, bill_times, out):
             else:
                 bill_times_splits = bill_line.split("~")
             
-        print(line.rstrip('\n') + "~" + str(transition_value), file=out)
+        out.write(line.rstrip('\n') + "~" + str(transition_value) + "\n")
 
 
 # In[ ]:
@@ -84,9 +83,6 @@ with open(cleaned_raw_filename, 'r') as raw:
 
 
 # # Mark Transition Lines (Tertiary)
-
-# In[ ]:
-
 
 # # Mark Transition Lines (N Range)
 
@@ -110,14 +106,8 @@ for i in transition_indexes:
     for x in range(-n, n+1):
         if (i + x >= 0 and i + x < length):
             new_transition_indexes.append(i + x)
-
-
-# In[ ]:
-
+            
 n_range.loc[new_transition_indexes, "transition_value"] = 1
-
-
-# In[ ]:
 
 n_range.to_csv(training_output_n_range_filename, sep="~", index=False)
 
@@ -160,4 +150,17 @@ with open(training_output_n_range_filename, 'r') as uncollapsed:
             
         #collapse transitions
         collapse_transitions(uncollapsed, collapsed)
+
+
+# # Verification
+
+# In[ ]:
+
+binary = pd.read_csv(training_output_binary_filename, sep="~")
+bill_times = pd.read_csv(bill_start_end_times_filename, sep="~")
+
+
+# In[ ]:
+
+assert(len(binary[binary["transition_value"]==1])==len(bill_times))
 

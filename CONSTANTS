@@ -2,6 +2,7 @@ ORIGINAL_RAW=data/original/raw.txt
 ORIGINAL_UPLEVELED=data/original/upleveled.txt
 ORIGINAL_UPLEVELED_SORTED=data/original/upleveled_sorted.csv
 CLEANED_RAW=data/cleaned/raw.csv
+CLEANED_RAW_BILL_ID_REPLACED=data/cleaned/raw_bill_id_replaced.csv
 CLEANED_UPLEVELED=data/cleaned/upleveled.csv
 BILL_START_END_TIMES_ALL=data/cleaned/bill_start_end_times_all.csv
 BILL_START_END_TIMES_LONGEST=data/cleaned/bill_start_end_times_longest.csv
