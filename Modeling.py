@@ -25,6 +25,11 @@ training_output_filename = data_dir + "training/training_utterances_binary.csv"
 
 # In[4]:
 
+training_output_binary_filename = data_dir + "training/training_utterances_binary.csv"
+
+
+# In[5]:
+
 # split dataset evenly based on labels
 def split_test_train(total, stratify_col):
     transition_rows = total[total[stratify_col] != 0]
@@ -66,7 +71,21 @@ def split_test_train(total, stratify_col):
     
 
 
-# In[5]:
+# In[44]:
+
+# assert training/testing split is balanced
+def verify_train_test_split(train, x_train, y_train, x_test, y_test):
+    transition_rows = train[train[target_col] != 0]
+    assert len(x_train) == len(y_train)
+    assert len(x_test) == len(y_test)
+    assert len(x_train) == int(len(transition_rows) * 0.7) * 2
+    assert len(x_test) == (len(transition_rows) * 2) - (int(len(transition_rows) * 0.7) * 2)
+    assert len(y_train[y_train == 0]) == len(y_train[y_train != 0])
+    assert len(y_test[y_test == 0]) == len(y_test[y_test != 0])
+    print ("{0}% of utterances are transitions".format((sum(y_train) / len(x_train)) * 100))
+
+
+# In[6]:
 
 # extract bag of words features from text for a model
 def bag_of_words_features(x_train, x_test):
@@ -80,7 +99,7 @@ def bag_of_words_features(x_train, x_test):
     return X_train_counts, X_test_counts
 
 
-# In[6]:
+# In[7]:
 
 # output accuracy for a naive bayes model
 # return the trained model
@@ -96,7 +115,7 @@ def model(X_train_counts, X_test_counts, y_train, y_test):
     return clf
 
 
-# In[7]:
+# In[8]:
 
 def remove_transcript(train, n):
     total = len(np.unique(train['video_id']))
@@ -110,19 +129,99 @@ def remove_transcript(train, n):
     return train, rows
 
 
+# In[64]:
+
+# adds the prefix CONTEXT to all utterances n before and after
+# a transition phrase
+def add_context(n):
+    n_range = pd.read_csv(training_output_binary_filename, sep="~")
+
+    print ("Number of original transitions {0}".format(len(n_range[n_range['transition_value'] == 1])))
+    
+    transition_indexes = n_range.index[n_range["transition_value"] == 1].tolist()
+    
+    transition_text = n_range['text']
+    labels = n_range['transition_value']
+    
+    new_transition_indexes = []
+    new_transition_text = []
+
+    length = len(n_range)
+    
+    for i in transition_indexes:
+        for x in range(-n, n+1):
+            if (i + x >= 0 and i + x < length):
+                new_transition_indexes.append(i + x)
+                
+                if (labels[i+x] != 1):
+                    text = ' '.join(["CONTEXT-" + x for x in transition_text[i+x].split()])
+                    new_transition_text.append(text)
+                    
+                else:
+                    new_transition_text.append(transition_text[i+x])
+
+    n_range.loc[new_transition_indexes, "transition_value"] = 1
+    n_range.loc[new_transition_indexes, "text"] = new_transition_text
+    
+    print ("Number of new transitions indexes {0}".format(len(new_transition_indexes)))
+    print ("Number of new transitions {0}".format(len(n_range[n_range['transition_value'] == 1])))
+
+    return n_range
+
+
+# In[87]:
+
+# combine all n_range with context-appended text
+# into a single utterance
+def collapse_content(uncollapsed):
+    accumulated_text = ""
+    accumulating = False
+    
+    all_text = []
+    transition = []
+    
+    for line in uncollapsed.iterrows():
+        transition_value = int(line[1]['transition_value'])
+        text = line[1]['text'] + " "
+        
+        if transition_value == 1 and accumulating:
+            accumulated_text = accumulated_text + text
+            
+        elif transition_value == 1 and not accumulating:
+            accumulating = True
+            accumulated_text = accumulated_text + text
+            
+        elif transition_value == 0 and accumulating:
+            all_text.append(accumulated_text)
+            transition.append(1)
+            
+            all_text.append(text)
+            transition.append(0)
+            
+            accumulating = False
+            accumulated_text = ""
+            
+        else:
+            all_text.append(text)
+            transition.append(0)
+            
+    res = pd.DataFrame({'text':all_text, 'transition_value':transition}, columns=['text', 'transition_value'])
+    return res
+
+
 # ### Read in data
 
-# In[8]:
+# In[10]:
 
 train = pd.read_table(training_output_filename, sep="~")[['text', target_col, 'video_id']]
 
 
-# In[9]:
+# In[11]:
 
 print("Number of transitions in the dataset {0}".format(len(train[train['transition_value'] != 0])))
 
 
-# In[10]:
+# In[12]:
 
 train.head()
 
@@ -339,6 +438,69 @@ res.head()
 # In[51]:
 
 res.to_csv('/Users/soniamannan/Documents/DATA401/capstone/DigitalDemocracyCapstone/data/predictions/binary_predicted_transcript.csv')
+
+
+# ### Add a context prefix to surrounding utterances
+# ### Collapse the context (with prefix) and train on bag of words
+
+# In[88]:
+
+n_range = add_context(5)
+
+
+# In[89]:
+
+collapsed_n_range = collapse_content(n_range)
+collapsed_n_range.head()
+
+
+# In[90]:
+
+transitions = collapsed_n_range[collapsed_n_range['transition_value'] != 0]
+non_transitions = collapsed_n_range[collapsed_n_range['transition_value'] == 0]
+
+
+# In[91]:
+
+print ("Number of transition phrases {0}".format(len(transitions)))
+
+
+# In[92]:
+
+print ("Total number of utterances {0}".format(len(collapsed_n_range)))
+
+
+# In[93]:
+
+print ("{0}% of utterances are transitions".format((len(transitions)/len(collapsed_n_range))*100))
+
+
+# In[94]:
+
+print ("Example transition\n\n{0}".format(list(transitions['text'])[0]))
+
+
+# In[95]:
+
+print ("Example non-transitions\n\n{0}".format('\n'.join(list(non_transitions['text'])[:15])))
+
+
+# ### Make a new training/testing split
+
+# In[96]:
+
+x_train_context, x_test_context,  y_train_context, y_test_context = split_test_train(collapsed_n_range[['text', target_col]], target_col)
+
+
+# In[97]:
+
+verify_train_test_split(collapsed_n_range, x_train_context, y_train_context, x_test_context, y_test_context)
+
+
+# In[98]:
+
+X_train_counts, X_test_counts = bag_of_words_features(x_train_context, x_test_context)
+bag_of_words_model = model(X_train_counts, X_test_counts, y_train_context, y_test_context)
 
 
 # ### Use WordNet features
