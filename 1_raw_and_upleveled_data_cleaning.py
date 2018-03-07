@@ -93,17 +93,34 @@ cleaned_raw.sort_values(["video_id", "start"]).to_csv(cleaned_raw_filename, sep=
 cleaned_raw.head()
 
 
-# ## Bill Id Replacement
+# ## Text Formatting and Bill Id Replacement
 
 # In[ ]:
 
 bill_id_pattern_1_1 = "ab[0-9]+"
 bill_id_pattern_1_2 = "sb[0-9]+"
+bill_id_pattern_1_3 = "aca[0-9]+"
+bill_id_pattern_1_4 = "acr[0-9]+"
+bill_id_pattern_1_5 = "ajr[0-9]+"
+bill_id_pattern_1_6 = "ar[0-9]+"
+bill_id_pattern_1_7 = "hr[0-9]+"
+bill_id_pattern_1_8 = "sca[0-9]+"
+bill_id_pattern_1_9 = "scr[0-9]+"
+bill_id_pattern_1_10 = "sjr[0-9]+"
 
-bill_id_pattern_2_1 = ["assembly", "bill"]
-bill_id_pattern_2_2 = ["senate", "bill"]
+bill_id_pattern_2_1 = ["ab", "[0-9]+"]
+bill_id_pattern_2_2 = ["sb", "[0-9]+"]
+bill_id_pattern_2_3 = ["aca", "[0-9]+"]
+bill_id_pattern_2_4 = ["acr", "[0-9]+"]
+bill_id_pattern_2_5 = ["ajr", "[0-9]+"]
+bill_id_pattern_2_6 = ["ar", "[0-9]+"]
+bill_id_pattern_2_7 = ["hr", "[0-9]+"]
+bill_id_pattern_2_8 = ["sca", "[0-9]+"]
+bill_id_pattern_2_9 = ["scr", "[0-9]+"]
+bill_id_pattern_2_10 = ["sjr", "[0-9]+"]
 
-bill_id_pattern_3_1 = ["file", "item", "[0-9]+"]
+bill_id_pattern_3_1 = ["assembly", "bill", "[0-9]+"]
+bill_id_pattern_3_2 = ["senate", "bill", "[0-9]+"]
 
 bill_id_pattern_4_1 = ["assembly", "bill", "number", "[0-9]+"]
 bill_id_pattern_4_2 = ["senate", "bill", "number", "[0-9]+"]
@@ -130,20 +147,32 @@ def matches_any_4_word_pattern(word1, word2, word3, word4):
     return re_match_lists(pattern_list_list, word_list)
 
 def matches_any_3_word_pattern(word1, word2, word3):
-    pattern_list_list = [bill_id_pattern_3_1]
+    pattern_list_list = [bill_id_pattern_3_1, bill_id_pattern_3_2]
     word_list = [word1, word2, word3]
     
     return re_match_lists(pattern_list_list, word_list)
     
 def matches_any_2_word_pattern(word1, word2):
-    pattern_list_list = [bill_id_pattern_2_1, bill_id_pattern_2_2]
+    pattern_list_list = [bill_id_pattern_2_1, bill_id_pattern_2_2,
+                         bill_id_pattern_2_3, bill_id_pattern_2_4,
+                         bill_id_pattern_2_5, bill_id_pattern_2_6,
+                         bill_id_pattern_2_7, bill_id_pattern_2_8,
+                         bill_id_pattern_2_9, bill_id_pattern_2_10]
     word_list = [word1, word2]
     
     return re_match_lists(pattern_list_list, word_list)
 
 def matches_any_1_word_pattern(word):
     return (re.match(bill_id_pattern_1_1, word) or
-            re.match(bill_id_pattern_1_2, word))
+            re.match(bill_id_pattern_1_2, word) or
+            re.match(bill_id_pattern_1_3, word) or
+            re.match(bill_id_pattern_1_4, word) or
+            re.match(bill_id_pattern_1_5, word) or
+            re.match(bill_id_pattern_1_6, word) or
+            re.match(bill_id_pattern_1_7, word) or
+            re.match(bill_id_pattern_1_8, word) or
+            re.match(bill_id_pattern_1_9, word) or
+            re.match(bill_id_pattern_1_10, word))
 
 
 # In[ ]:
@@ -161,62 +190,88 @@ def shift_words_over(words, word_ix, shift_amount):
 
 # In[ ]:
 
-def replace_bill_ids_in_utterance(utterance, t1, t2, t3, t4):
+def replace_bill_ids_in_utterance(utterance, last_bill_number, t1, t2, t3, t4):
     words = utterance.lower().split()
     utterance_length = len(words)
     word_ix = 0
+    bill_id_replaced = False
     while(word_ix < utterance_length):
-        if (matches_any_1_word_pattern(words[word_ix])):
+        if (word_ix < (utterance_length-3) and
+            matches_any_4_word_pattern(words[word_ix],
+                                         words[word_ix+1],
+                                         words[word_ix+2],
+                                         words[word_ix+3])):
+            last_bill_number = words[word_ix+3]
             words[word_ix] = "<BILL_ID>"
-            t1 += 1
-        elif (word_ix < (utterance_length-1) and
-              matches_any_2_word_pattern(words[word_ix],
-                                         words[word_ix+1])):
-            words[word_ix] = "<BILL_ID>"
-            words = shift_words_over(words, word_ix+1, 1)
-            utterance_length -= 1
-            t2 += 1
+            words = shift_words_over(words, word_ix+1, 3)
+            utterance_length -= 3
+            bill_id_replaced = True
+            t4 += 1
         elif (word_ix < (utterance_length-2) and
               matches_any_3_word_pattern(words[word_ix],
                                          words[word_ix+1],
                                          words[word_ix+2])):
+            last_bill_number = words[word_ix+2]
             words[word_ix] = "<BILL_ID>"
             words = shift_words_over(words, word_ix+1, 2)
             utterance_length -= 2
+            bill_id_replaced = True
             t3 += 1
-        elif (word_ix < (utterance_length-3) and
-              matches_any_4_word_pattern(words[word_ix],
-                                         words[word_ix+1],
-                                         words[word_ix+2],
-                                         words[word_ix+3])):
+        elif (word_ix < (utterance_length-1) and
+            matches_any_2_word_pattern(words[word_ix],
+                                         words[word_ix+1])):
+            last_bill_number = words[word_ix+1]
             words[word_ix] = "<BILL_ID>"
-            words = shift_words_over(words, word_ix+1, 3)
-            utterance_length -= 3
-            t4 += 1
-    
+            words = shift_words_over(words, word_ix+1, 1)
+            utterance_length -= 1
+            bill_id_replaced = True
+            t2 += 1
+        elif (matches_any_1_word_pattern(words[word_ix])):
+            last_bill_number = words[word_ix].split("[a-z]+")[-1]
+            words[word_ix] = "<BILL_ID>"
+            bill_id_replaced = True
+            t1 += 1
+
         word_ix += 1
             
-    return (" ".join(words), t1, t2, t3, t4)
+    return (" ".join(words), last_bill_number, bill_id_replaced, t1, t2, t3, t4)
 
 
 # In[ ]:
 
 def replace_bill_ids(old, new):
-    t1 = 0
+    t1 = 0  #keeps track of how many bill id replacements there were
     t2 = 0
     t3 = 0
     t4 = 0
     
+    last_bill_number = ""
+    last_bill_number_line = 0
+    transition_window_list = []
+    line_number = 0
     for line in old:
         line_splits = line.lower().rstrip("\n").split("~")
         
-        (new_text, t1, t2, t3, t4) = replace_bill_ids_in_utterance(line_splits[2], t1, t2, t3, t4)
+        (new_text, current_bill_number, bill_id_replaced, t1, t2, t3, t4) = replace_bill_ids_in_utterance(line_splits[2], last_bill_number, t1, t2, t3, t4)
+        
+        if (bill_id_replaced):
+            if (current_bill_number != last_bill_number):
+                transition_window_list.append((last_bill_number_line, line_number))
+                last_bill_number = current_bill_number
+                last_bill_number_line = line_number
+            elif (current_bill_number == last_bill_number):
+                last_bill_number_line = line_number
         
         new.write(line_splits[0] + "~" + line_splits[1] + "~" + new_text + "~" + line_splits[3] + "\n")
-    
+        line_number += 1
+        
+    print("Length of Bill Patterns Replaced\n1: " + str(t1) + "\n2: " + str(t2) + "\n3: " + str(t3) + "\n4: " + str(t4))
+    return transition_window_list
 
 
 # In[ ]:
+
+transition_window_list = [] #not currently used, but is available for use
 
 with open(cleaned_raw_filename, 'r') as old:
     with open(cleaned_raw_bill_id_replaced_filename, 'w') as new:
@@ -225,7 +280,7 @@ with open(cleaned_raw_filename, 'r') as old:
         new.write(h)
             
         #actually iterate through the file
-        replace_bill_ids(old, new)
+        transition_window_list = replace_bill_ids(old, new)
 
 
 # # Upleveled Processing
@@ -292,4 +347,9 @@ longest_bill_discussions = longest_bill_discussions.sort_values(["video_id", "sp
 
 bill_start_end_times.to_csv(bill_start_end_times_all_filename, sep="~", index=False)
 longest_bill_discussions.to_csv(bill_start_end_times_longest_filename, sep="~", index=False)
+
+
+# In[ ]:
+
+
 
