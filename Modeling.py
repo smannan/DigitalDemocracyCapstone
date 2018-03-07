@@ -129,84 +129,42 @@ def remove_transcript(train, n):
     return train, rows
 
 
-# In[64]:
+# In[152]:
 
-# adds the prefix CONTEXT to all utterances n before and after
+# adds the prefix POST to all utterances n after
+# adds the prefix PRE to all utterances n before
 # a transition phrase
 def add_context(n):
     n_range = pd.read_csv(training_output_binary_filename, sep="~")
-
-    print ("Number of original transitions {0}".format(len(n_range[n_range['transition_value'] == 1])))
-    
-    transition_indexes = n_range.index[n_range["transition_value"] == 1].tolist()
     
     transition_text = n_range['text']
     labels = n_range['transition_value']
     
-    new_transition_indexes = []
+    new_transition_labels = []
     new_transition_text = []
 
     length = len(n_range)
     
-    for i in transition_indexes:
+    for i in range(length):
+        # get the phrases in the window
+        text = ''
         for x in range(-n, n+1):
+            # window is within range of the dataframe
             if (i + x >= 0 and i + x < length):
-                new_transition_indexes.append(i + x)
-                
-                if (labels[i+x] != 1):
-                    text = ' '.join(["CONTEXT-" + x for x in transition_text[i+x].split()])
-                    new_transition_text.append(text)
-                    
+                if (x > 0):
+                    text += ' '.join(["POST-" + x for x in transition_text[i+x].split()])
+                if (x < 0):
+                    text += ' '.join(["PRE-" + x for x in transition_text[i+x].split()])
                 else:
-                    new_transition_text.append(transition_text[i+x])
-
-    n_range.loc[new_transition_indexes, "transition_value"] = 1
-    n_range.loc[new_transition_indexes, "text"] = new_transition_text
+                    text += ' ' + transition_text[i+x] + ' '
+                    
+        new_transition_text.append(text)
     
-    print ("Number of new transitions indexes {0}".format(len(new_transition_indexes)))
-    print ("Number of new transitions {0}".format(len(n_range[n_range['transition_value'] == 1])))
-
-    return n_range
-
-
-# In[87]:
-
-# combine all n_range with context-appended text
-# into a single utterance
-def collapse_content(uncollapsed):
-    accumulated_text = ""
-    accumulating = False
+    print ("Number of new phrases {0}".format(len(new_transition_text)))
+    print ("Number of labels {0}".format(len(n_range['transition_value'])))
     
-    all_text = []
-    transition = []
-    
-    for line in uncollapsed.iterrows():
-        transition_value = int(line[1]['transition_value'])
-        text = line[1]['text'] + " "
-        
-        if transition_value == 1 and accumulating:
-            accumulated_text = accumulated_text + text
-            
-        elif transition_value == 1 and not accumulating:
-            accumulating = True
-            accumulated_text = accumulated_text + text
-            
-        elif transition_value == 0 and accumulating:
-            all_text.append(accumulated_text)
-            transition.append(1)
-            
-            all_text.append(text)
-            transition.append(0)
-            
-            accumulating = False
-            accumulated_text = ""
-            
-        else:
-            all_text.append(text)
-            transition.append(0)
-            
-    res = pd.DataFrame({'text':all_text, 'transition_value':transition}, columns=['text', 'transition_value'])
-    return res
+    return pd.DataFrame({'text':new_transition_text,'transition_value':n_range['transition_value']}, 
+     columns=['text', target_col])
 
 
 # ### Read in data
@@ -369,7 +327,7 @@ tf_idf_model = model(Xtrain_tfidf, Xtest_tfidf, y_train, y_test)
 # ### Vectorize utterances with n-gram features
 # ### Best accuracy when combining unigram and bigrams
 
-# In[29]:
+# In[157]:
 
 def transform_ngram(start, stop, x_train, x_test):
     ngram_vectorizer = CountVectorizer(analyzer='word', ngram_range=(start, stop))
@@ -443,64 +401,63 @@ res.to_csv('/Users/soniamannan/Documents/DATA401/capstone/DigitalDemocracyCapsto
 # ### Add a context prefix to surrounding utterances
 # ### Collapse the context (with prefix) and train on bag of words
 
-# In[88]:
+# In[160]:
 
 n_range = add_context(5)
 
 
-# In[89]:
+# In[161]:
 
-collapsed_n_range = collapse_content(n_range)
-collapsed_n_range.head()
-
-
-# In[90]:
-
-transitions = collapsed_n_range[collapsed_n_range['transition_value'] != 0]
-non_transitions = collapsed_n_range[collapsed_n_range['transition_value'] == 0]
+transitions = n_range[n_range['transition_value'] != 0]
+non_transitions = n_range[n_range['transition_value'] == 0]
 
 
-# In[91]:
+# In[162]:
 
 print ("Number of transition phrases {0}".format(len(transitions)))
 
 
-# In[92]:
+# In[163]:
 
 print ("Total number of utterances {0}".format(len(collapsed_n_range)))
 
 
-# In[93]:
-
-print ("{0}% of utterances are transitions".format((len(transitions)/len(collapsed_n_range))*100))
-
-
-# In[94]:
+# In[164]:
 
 print ("Example transition\n\n{0}".format(list(transitions['text'])[0]))
 
 
-# In[95]:
+# In[165]:
 
-print ("Example non-transitions\n\n{0}".format('\n'.join(list(non_transitions['text'])[:15])))
+print ("Example non-transitions\n\n{0}".format((list(non_transitions['text'])[10])))
 
 
 # ### Make a new training/testing split
 
-# In[96]:
+# In[166]:
 
-x_train_context, x_test_context,  y_train_context, y_test_context = split_test_train(collapsed_n_range[['text', target_col]], target_col)
-
-
-# In[97]:
-
-verify_train_test_split(collapsed_n_range, x_train_context, y_train_context, x_test_context, y_test_context)
+x_train_context, x_test_context,  y_train_context, y_test_context = split_test_train(n_range[['text', target_col]], target_col)
 
 
-# In[98]:
+# In[167]:
+
+verify_train_test_split(n_range, x_train_context, y_train_context, x_test_context, y_test_context)
+
+
+# In[168]:
 
 X_train_counts, X_test_counts = bag_of_words_features(x_train_context, x_test_context)
 bag_of_words_model = model(X_train_counts, X_test_counts, y_train_context, y_test_context)
+
+
+# In[169]:
+
+X_train_ngram_counts, X_test_ngram_counts = transform_ngram(1, 2, x_train_context, x_test_context)
+
+
+# In[170]:
+
+ngram_model = model(X_train_ngram_counts, X_test_ngram_counts, y_train_context, y_test_context)
 
 
 # ### Use WordNet features
