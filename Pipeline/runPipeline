@@ -1,0 +1,6 @@
+#!/bin/bash
+
+mytmpdir=`mktemp -d 2>/dev/null || mktemp -d -t 'mytmpdir'`
+
+python scripts/Raw+Data+Processing.py $1 mytempdir/"cleaned_raw.csv2"
+
