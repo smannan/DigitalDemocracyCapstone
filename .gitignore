@@ -1,5 +1,7 @@
-data/training/*
-data/cleaned/*
+data/training/*.csv
+data/cleaned/*.csv
+data/training/*.csv2
+data/cleaned/*.csv2
 *.csv
 *.csv2
 *.p
