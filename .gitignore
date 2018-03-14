@@ -1,3 +1,5 @@
 data/training/*
 data/cleaned/*
 *.csv
+*.csv2
+*.p
