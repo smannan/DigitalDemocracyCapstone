@@ -5,3 +5,6 @@ data/cleaned/*.csv2
 *.csv
 *.csv2
 *.p
+__MACOSX/
+.ipynb_checkpoints/
+.DS_Store
