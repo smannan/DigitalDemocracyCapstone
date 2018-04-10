@@ -4,7 +4,7 @@
 
 This folder contains the code to train our machine learning models. It contains notebooks to process raw data and extract features, combine raw data with upleveled data, create training and testing datasets, then train either a Naive Bayes or Neural Network model.
 
-The output of model training will be a pickle file containing the Naive Bayes model and text vectorizer or a .hdf5
+The output of model training will be two pickle files containing the Naive Bayes model and text vectorizer or a .hdf5
 file containing the weights of the neural network model.
 
 Run model training before pipeline to traing the model first.
