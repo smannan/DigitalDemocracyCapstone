@@ -10,3 +10,4 @@ __MACOSX/
 .DS_Store
 Pipeline/.ipynb_checkpoints/
 Model Training/.ipynb_checkpoints/
+data/.DS_Store

@@ -1,9 +1,0 @@
-#!/bin/bash
-
-echo "Running 0_reset_data_directory.py...\n"
-python 0_reset_data_directory.py
-echo "Running 1_raw_and_upleveled_data_cleaning.py...\n"
-python 1_raw_and_upleveled_data_cleaning.py
-echo "Running 2_create_training_sets_with_transitions.py...\n"
-python 2_create_training_sets_with_transitions.py
-echo "Complete.\n"
