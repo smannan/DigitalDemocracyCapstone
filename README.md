@@ -12,9 +12,8 @@ Run model training before pipeline to traing the model first.
 
 ## Pipeline
 
-This folder contains two notebooks: Raw_Data_Processing and Make_Predictions. It also contains a python file Predict_Transitions that combines the code in the two python notebooks.
+This folder contains two notebooks: Raw_Data_Processing and Make_Predictions. It also contains a python file Predict_Transitions.py that combines the code in the two python notebooks.
 
-The code in pipeline expects a list of dictionaries containing utterance start time, end time, video id, and text.
-The output will then be a list of dictionaries containing transition utterances. The python file 
+The code in Predict_Transitions.py expects a list of dictionaries containing utterance start time, end time, video id, and text. The output will then be a list of dictionaries containing transition utterances. The python file 
 Predict_Transitions.py contains a function, predict, that will output transition utterances given a list of dictionaries.
 
