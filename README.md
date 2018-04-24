@@ -1,27 +1,19 @@
 # DigitalDemocracyCapstone
 
-## raw_and_upleveled_data_cleaning.py
+## Model Training
 
-Takes original raw transcripts and upleveled transcripts from data/original/ and generates files in data/cleaned/ in a more usable format.  The generated files are:
-- data/cleaned/raw.csv - the basic utterances and times from the raw transcript
-- data/cleaned/bill_start_end_times.csv - each row contains a bill id, video id, and the times in which the discussion of the bill started and stopped
+This folder contains the code to train our machine learning models. It contains notebooks to process raw data and extract features, combine raw data with upleveled data, create training and testing datasets, then train either a Naive Bayes or Neural Network model.
 
-## create_training_set_with_transitions.py
+The output of model training will be two pickle files containing the Naive Bayes model and text vectorizer or a .hdf5
+file containing the weights of the neural network model.
 
-Generates the training sets by appending a column called 'transition_value' to training_data/cleaned/raw.csv.  The following training sets are generated:
+Run model training before pipeline to traing the model first.
 
-#### training_utterances_binary.csv
 
-Utterances are marked with a 1 if they are a transition and a 0 if they are not.
+## Pipeline
 
-#### training_utterances_tertiary.csv
+This folder contains two notebooks: Raw_Data_Processing and Make_Predictions. It also contains a python file Predict_Transitions.py that combines the code in the two python notebooks.
 
-Utterances are marked with a 1 if they are the start of a bill, 2 if they are the end of a bill, and 0 otherwise.
+The code in Predict_Transitions.py expects a list of dictionaries containing utterance start time, end time, video id, and text. The output will then be a list of dictionaries containing transition utterances. The python file 
+Predict_Transitions.py contains a function, predict, that will output transition utterances given a list of dictionaries.
 
-#### training_utterances_n_range.csv
-
-Utterances are marked with a 1 if they are within an n utterance range of a transition, and 0 otherwise.
-
-#### training_utterances_n_range_collapsed.csv
-
-All utterances within a "transition range" (within n utterances of a transition) are collapsed into a single utterance, marked with 1.  All other utterances are marked with 0.

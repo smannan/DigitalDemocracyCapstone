@@ -1,3 +1,0 @@
-#!/bin/bash
-
-python scripts/Raw+Data+Processing.py $1 temp_cleaned_raw.csv
