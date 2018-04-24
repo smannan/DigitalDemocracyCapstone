@@ -103,6 +103,8 @@ def bill_types_to_acronyms(lines):
     update_dict['assembly bill number'] = 'ab'
     update_dict['senate bill'] = 'sb'
     update_dict['senate bill number'] = 'sb'
+    update_dict['house resolution'] = 'hr'
+    update_dict['house resolution number'] = 'hr'
     #TODO
     
     updated_lines = []
