@@ -6,6 +6,8 @@ import pickle
 import re
 import sys
 
+import textedit
+
 from bs4 import BeautifulSoup
 
 # Define text formatting and bill replacement logic.  
@@ -238,7 +240,7 @@ def predict_from_naive_bayes(transcript):
     prediction_values = predict_entire_transcript(transcript, model, count_vect)
     transcript["prediction"] = prediction_values
     predicted_transitions = transcript[transcript["prediction"]==1]
-    transition_dictionary = predicted_transitions[["start", "end", "text"]].to_dict(orient="records")
+    transition_dictionary = predicted_transitions[["video_id", "start", "end", "text"]].to_dict(orient="records")
     
     return transition_dictionary
 
@@ -280,30 +282,118 @@ def process_raw_data(new_transcript):
 	processed_new_transcript = pd.read_csv(cleaned_raw_bill_id_replaced_filename, sep="~")
 	return processed_new_transcript
 
+# returns None if no bill name found, returns bill name if it is found
+def extract_bill_name(text):
+    print("edited text: ")
+    print(textedit.correct_text(list(text)))
+    return None
+
+
+def enhance_dictionary_helper(combined): 
+    enhanced_dictionary = []
+    
+    start_list = list(combined["start"])
+    end_list = list(combined["end"])
+    video_id_list = list(combined["video_id"])
+    original_text_list = list(combined["text_original"])
+    modified_text_list = list(combined["text_modified"])
+    bill_names_list = list(combined["bill_names"])
+    
+    found_associated_bill_id = True
+    i = 0
+    while (i < len(original_text_list)):
+        # if the utterance is not a transition utterance, continue
+        if (pd.isnull(modified_text_list[i])):
+            i += 1
+            continue
+        
+        #otherwise, if there is a bill id immediately associated with the utterance,
+        #input it into the dictionary, then continue
+        if (len(bill_names_list[i]) > 0):
+            enhanced_dictionary.append({
+                    'start':start_list[i], 'end':end_list[i],
+                    'video_id':video_id_list[i], 'text':original_text_list[i],
+                    'suggested_bill':bill_names_list[i][0]})
+            i += 1
+            continue
+        
+        #otherwise, scan all table rows until the next transition utterance looking for
+        #an associated bill id
+        j = i+1
+        while(j < len(original_text_list) and pd.isnull(modified_text_list[j])):
+            if (len(bill_names_list[j]) > 0):
+                enhanced_dictionary.append({
+                    'start':start_list[i], 'end':end_list[i],
+                    'video_id':video_id_list[i], 'text':original_text_list[i],
+                    'suggested_bill':bill_names_list[j][0]})
+                i = j+1
+                found_associated_bill_id = False
+                break
+            j += 1
+            
+        if (not found_associated_bill_id):
+            found_associated_bill_id = True
+            continue
+        
+        #at this point, the transition utterance has no associated bill ids in the window
+        #so we likely want to disregard the transition as a possibility
+        #for now we simply enter it with the suggested_bill field having value 'NONE'
+        enhanced_dictionary.append({
+                    'start':start_list[i], 'end':end_list[i],
+                    'video_id':video_id_list[i], 'text':original_text_list[i],
+                    'suggested_bill':'NONE'})
+        i = j
+            
+    return enhanced_dictionary
+
+
+def enhance_dictionary(original_transcript, transition_dictionary):
+    #transition_dictitionary format: [{video_id, start, end, text}]
+    #original transcript format new_transcript = [{'start':'1', 'end':'9', 'text':'we are starting', 'video_id':'1'}]
+    
+    original = pd.DataFrame.from_dict(original_transcript)
+    transitions = pd.DataFrame.from_dict(transition_dictionary)
+    
+    #combined = pd.merge(original, transitions, on=["video_id", "start", "end"], suffixes=("_original", "_modified"))
+    combined = pd.merge(original, transitions, how='left', on=["video_id", "start", "end"], suffixes=("_original", "_modified")) 
+    substituted_original = textedit.correct_text(list(combined["text_original"]))
+    
+    bill_names_in_text = []
+    for text in substituted_original:
+        bill_names_in_text.append(re.findall("[a-zA-Z]+\\s*[0-9]+", text))
+        
+    combined["bill_names"] = bill_names_in_text
+    
+    return enhance_dictionary_helper(combined)
+    
+    
 # given a list of dictionaries, return a 
 def predict(new_transcript):
-	processed_new_transcript = process_raw_data(new_transcript)
+    processed_new_transcript = process_raw_data(new_transcript)
 
-	transition_dictionary = {}
+    transition_dictionary = {}
 
-	if (model_type == "NB"):
-	    transition_dictionary = predict_from_naive_bayes(processed_new_transcript)
+    if (model_type == "NB"):
+        transition_dictionary = predict_from_naive_bayes(processed_new_transcript)
 
-	elif (model_type == "NN"):
-	    raise Exception("Neural network not supported yet.")
-	    predict_from_neural_network()
+    elif (model_type == "NN"):
+        raise Exception("Neural network not supported yet.")
+        predict_from_neural_network()
 
-	else:
-	    raise Exception("Model type not defined.")
+    else:
+        raise Exception("Model type not defined.")
 
-	return transition_dictionary
+    enhanced_dictionary = enhance_dictionary(new_transcript, transition_dictionary)
+    return enhanced_dictionary
+    
 
 def main():
-	new_transcript = [{'start':'1', 'end':'9', 'text':'we are starting', 'video_id':'1'}, 
-	 {'start':'9', 'end':'12', 'text':'we keep going', 'video_id':'1'}]
-
-	transition_dictionary = predict(new_transcript)
-	print (transition_dictionary)
+    new_transcript = [{'start':1, 'end':9, 'text':'we are starting', 'video_id':1}, 
+     {'start':9, 'end':12, 'text':'we keep going on assembly bill three four five six', 'video_id':1},
+     {'start':14, 'end':20, 'text':'is this a', 'video_id':1},
+     {'start':21, 'end':22, 'text':'what do you think of senate bill 134?', 'video_id':1}]
+    transition_dictionary = predict(new_transcript)
+    enhanced_dictionary = enhance_dictionary(new_transcript, transition_dictionary)
 
 if __name__ == "__main__":
     main()
