@@ -207,9 +207,9 @@ def add_context(n, cleaned_raw_bill_id_replaced_filename):
             # window is within range of the dataframe
             if (i + x >= 0 and i + x < length):
                 if (x > 0):
-                    text += ' '.join(["POST-" + x for x in transition_text[i+x].split()])
+                    text += ' '.join(["POST-" + post for post in transition_text[i+x].split()])
                 if (x < 0):
-                    text += ' '.join(["PRE-" + x for x in transition_text[i+x].split()])
+                    text += ' '.join(["PRE-" + pre for pre in transition_text[i+x].split()])
                 else:
                     text += ' ' + transition_text[i+x] + ' '
                     
@@ -235,7 +235,6 @@ def predict_entire_transcript(transcripts, model, count_vect):
 def predict_from_naive_bayes(transcript):
     model = pickle.load(open(model_filename, "rb"))
     count_vect = pickle.load(open(count_vectorizer_filename, "rb"))
-    #transcript = transcript[transcript["video_id"]==4161]
 
     prediction_values = predict_entire_transcript(transcript, model, count_vect)
     transcript["prediction"] = prediction_values
@@ -388,10 +387,11 @@ def predict(new_transcript):
     
 
 def main():
-    new_transcript = [{'start':1, 'end':9, 'text':'we are starting', 'video_id':1}, 
-     {'start':9, 'end':12, 'text':'we keep going on assembly bill three four five six', 'video_id':1},
-     {'start':14, 'end':20, 'text':'is this a', 'video_id':1},
-     {'start':21, 'end':22, 'text':'what do you think of senate bill 134?', 'video_id':1}]
+    #new_transcript = [{'start':1, 'end':9, 'text':'we are starting', 'video_id':1}, 
+    # {'start':9, 'end':12, 'text':'we keep going on assembly bill three four five six', 'video_id':1},
+    # {'start':14, 'end':20, 'text':'is this a', 'video_id':1},
+    # {'start':21, 'end':22, 'text':'what do you think of senate bill 134?', 'video_id':1}]
+    new_transcript = pd.read_csv('../data/cleaned/transcript_witheld.csv', sep="~").to_dict('records')
     transition_dictionary = predict(new_transcript)
     enhanced_dictionary = enhance_dictionary(new_transcript, transition_dictionary)
 
