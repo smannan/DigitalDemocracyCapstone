@@ -360,7 +360,7 @@ def enhance_dictionary(original_transcript, transition_dictionary):
     bill_names_in_text = []
     for text in substituted_original:
         bill_names_in_text.append(re.findall("[a-zA-Z]+\\s*[0-9]+", text))
-        
+
     combined["bill_names"] = bill_names_in_text
     
     return enhance_dictionary_helper(combined)
@@ -387,14 +387,19 @@ def predict(new_transcript):
     
 
 def main():
-    #new_transcript = [{'start':1, 'end':9, 'text':'we are starting', 'video_id':1}, 
-    # {'start':9, 'end':12, 'text':'we keep going on assembly bill three four five six', 'video_id':1},
-    # {'start':14, 'end':20, 'text':'is this a', 'video_id':1},
-    # {'start':21, 'end':22, 'text':'what do you think of senate bill 134?', 'video_id':1}]
     new_transcript = pd.read_csv('../data/cleaned/transcript_witheld.csv', sep="~").to_dict('records')
     transition_dictionary = predict(new_transcript)
     enhanced_dictionary = enhance_dictionary(new_transcript, transition_dictionary)
-    print(enhanced_dictionary.head())
+    
+    #print(enhanced_dictionary)
+    i = 0
+    for v in enhanced_dictionary:
+        if v["suggested_bill"] != "NONE":
+            i += 1
+            print(v)
+    
+    print("number that have a suggested bill: ")
+    print(i)
 
 if __name__ == "__main__":
     main()
