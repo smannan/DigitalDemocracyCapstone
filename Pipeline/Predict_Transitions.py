@@ -394,6 +394,7 @@ def main():
     new_transcript = pd.read_csv('../data/cleaned/transcript_witheld.csv', sep="~").to_dict('records')
     transition_dictionary = predict(new_transcript)
     enhanced_dictionary = enhance_dictionary(new_transcript, transition_dictionary)
+    print(enhanced_dictionary.head())
 
 if __name__ == "__main__":
     main()
