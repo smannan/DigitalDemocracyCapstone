@@ -5,12 +5,7 @@ import pandas as pd
 import pickle
 import re
 import sys
-
-<<<<<<< HEAD
 import textedit
-
-=======
->>>>>>> daf60640a1df5e6faa096370b8b30a58bb5ae51b
 from bs4 import BeautifulSoup
 
 # Define text formatting and bill replacement logic.  
@@ -210,15 +205,9 @@ def add_context(n, cleaned_raw_bill_id_replaced_filename):
             # window is within range of the dataframe
             if (i + x >= 0 and i + x < length):
                 if (x > 0):
-<<<<<<< HEAD
                     text += ' '.join(["POST-" + post for post in transition_text[i+x].split()])
                 if (x < 0):
                     text += ' '.join(["PRE-" + pre for pre in transition_text[i+x].split()])
-=======
-                    text += ' '.join(["POST-" + x for x in transition_text[i+x].split()])
-                if (x < 0):
-                    text += ' '.join(["PRE-" + x for x in transition_text[i+x].split()])
->>>>>>> daf60640a1df5e6faa096370b8b30a58bb5ae51b
                 else:
                     text += ' ' + transition_text[i+x] + ' '
                     
@@ -244,19 +233,11 @@ def predict_entire_transcript(transcripts, model, count_vect):
 def predict_from_naive_bayes(transcript):
     model = pickle.load(open(model_filename, "rb"))
     count_vect = pickle.load(open(count_vectorizer_filename, "rb"))
-<<<<<<< HEAD
-=======
-    #transcript = transcript[transcript["video_id"]==4161]
->>>>>>> daf60640a1df5e6faa096370b8b30a58bb5ae51b
 
     prediction_values = predict_entire_transcript(transcript, model, count_vect)
     transcript["prediction"] = prediction_values
     predicted_transitions = transcript[transcript["prediction"]==1]
-<<<<<<< HEAD
     transition_dictionary = predicted_transitions[["video_id", "start", "end", "text"]].to_dict(orient="records")
-=======
-    transition_dictionary = predicted_transitions[["start", "end", "text"]].to_dict(orient="records")
->>>>>>> daf60640a1df5e6faa096370b8b30a58bb5ae51b
     
     return transition_dictionary
 
@@ -298,7 +279,6 @@ def process_raw_data(new_transcript):
 	processed_new_transcript = pd.read_csv(cleaned_raw_bill_id_replaced_filename, sep="~")
 	return processed_new_transcript
 
-<<<<<<< HEAD
 # returns None if no bill name found, returns bill name if it is found
 def extract_bill_name(text):
     print("edited text: ")
@@ -418,31 +398,6 @@ def main():
     
     print("number that have a suggested bill: ")
     print(i)
-=======
-# given a list of dictionaries, return a 
-def predict(new_transcript):
-	processed_new_transcript = process_raw_data(new_transcript)
-
-	transition_dictionary = {}
-
-	if (model_type == "NB"):
-	    transition_dictionary = predict_from_naive_bayes(processed_new_transcript)
-
-	elif (model_type == "NN"):
-	    raise Exception("Neural network not supported yet.")
-	    predict_from_neural_network()
-
-	else:
-	    raise Exception("Model type not defined.")
-
-	return transition_dictionary
-
-def main():
-	new_transcript = [{'start':'1', 'end':'9', 'text':'we are starting', 'video_id':'1'}, 
-	 {'start':'9', 'end':'12', 'text':'we keep going', 'video_id':'1'}]
-
-	transition_dictionary = predict(new_transcript)
-	print (transition_dictionary)
-
+    
 if __name__ == "__main__":
     main()
