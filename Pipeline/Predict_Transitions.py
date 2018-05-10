@@ -365,13 +365,14 @@ def enhance_dictionary(original_transcript, transition_dictionary):
     
     
 # given a list of dictionaries, return a 
-def predict(new_transcript):
-    processed_new_transcript = process_raw_data(new_transcript)
+def predict(new_transcript, process_raw=True):
+    if(process_raw):
+        new_transcript = process_raw_data(new_transcript)
 
     transition_dictionary = {}
 
     if (model_type == "NB"):
-        transition_dictionary = predict_from_naive_bayes(processed_new_transcript)
+        transition_dictionary = predict_from_naive_bayes(new_transcript)
 
     elif (model_type == "NN"):
         raise Exception("Neural network not supported yet.")
@@ -385,8 +386,8 @@ def predict(new_transcript):
     
 
 def main():
-    new_transcript = pd.read_csv('../data/cleaned/transcript_witheld.csv', sep="~").to_dict('records')
-    transition_dictionary = predict(new_transcript)
+    new_transcript = pd.read_csv('../data/cleaned/transcript_withheld.csv', sep="~").to_dict('records')
+    transition_dictionary = predict(new_transcript, False)
     enhanced_dictionary = enhance_dictionary(new_transcript, transition_dictionary)
     
     #print(enhanced_dictionary)
