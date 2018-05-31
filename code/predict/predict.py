@@ -57,8 +57,9 @@ def print_withheld_recall(transition_dictionary, bill_table, recall_proximity_ti
     print("Recall within {0} seconds: {1}/{2} = {3}".format(recall_proximity_time, r, len(times), 1.0*r/len(times)))
         
 
-def evaluate_withheld_transcripts(withheld_training_transcripts, withheld_bill_times_table,
-                                              model_type, model_folder="../../model"):
+def evaluate_withheld_transcripts(withheld_training_transcripts, model_type,
+                                  withheld_bill_times_table="../../data/cleaned/upleveled_bill_times_table_withheld.csv",
+                                  model_folder="../../model"):
     new_transcript = pd.read_csv(withheld_training_transcripts, sep="~")[["start", "end", "text", "video_id"]]
     bill_times_table = pd.read_csv(withheld_bill_times_table, sep="~")
     video_ids = np.unique(new_transcript[["video_id"]])
