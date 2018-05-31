@@ -40,7 +40,7 @@ def predict(new_video_transcript_dictionary, model_type,
     return predict_transitions(new_video_transcript_dictionary, processed_new_transcript, model_type, model_folder)
 
 
-def print_withheld_recall(transition_dictionary, bill_table, recall_proximity_time):
+def print_withheld_accuracy(transition_dictionary, bill_table, proximity_time):
     r = 0
     bill_ids = list(bill_table["bill_id"])
     times = list(bill_table["speaker_start_time"])
@@ -50,12 +50,15 @@ def print_withheld_recall(transition_dictionary, bill_table, recall_proximity_ti
     
     for i in range(len(times)):
         for entry in transition_dictionary:
-            if (math.fabs(entry["start"] - times[i]) < recall_proximity_time):
+            if (math.fabs(entry["start"] - times[i]) < proximity_time):
                 r += 1
                 break
     
-    print("Recall within {0} seconds: {1}/{2} = {3}".format(recall_proximity_time, r, len(times), 1.0*r/len(times)))
-        
+    print("Recall within {0} seconds: {1}/{2} = {3}".format(proximity_time, r, len(times), 1.0*r/len(times)))
+    print("Precision within {0} seconds: {1}/{2} = {3}".format(proximity_time, r, len(transition_dictionary),
+                                                               1.0*r/len(transition_dictionary)))
+    print()
+    
 
 def evaluate_withheld_transcripts(withheld_training_transcripts, model_type,
                                   withheld_bill_times_table="../../data/cleaned/upleveled_bill_times_table_withheld.csv",
@@ -75,6 +78,7 @@ def evaluate_withheld_transcripts(withheld_training_transcripts, model_type,
         transition_dictionary = predict(new_transcript_subset, model_type)
         enhanced_dictionary = enhance_dictionary(new_transcript_subset, transition_dictionary)
         shortened_dictionary = remove_unknown_suggested_bills(enhanced_dictionary)
+        #shortened_dictionary = enhanced_dictionary
         
         print("Actual Bill Discussion Starts:\n")
         
@@ -89,7 +93,6 @@ def evaluate_withheld_transcripts(withheld_training_transcripts, model_type,
             print(entry)
         
         print()
-        print_withheld_recall(shortened_dictionary, bill_times_table_subset, 15)
-        print_withheld_recall(shortened_dictionary, bill_times_table_subset, 30)
-        print_withheld_recall(shortened_dictionary, bill_times_table_subset, 60)
-        print()
+        print_withheld_accuracy(shortened_dictionary, bill_times_table_subset, 15)
+        print_withheld_accuracy(shortened_dictionary, bill_times_table_subset, 30)
+        print_withheld_accuracy(shortened_dictionary, bill_times_table_subset, 60)
