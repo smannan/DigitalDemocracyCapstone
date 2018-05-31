@@ -1,6 +1,0 @@
-#!/bin/bash
-
-python scripts/Cleanup+And+Reset+Directory.py "temp" "training_output"
-python scripts/Raw+Data+Processing.py $1 temp/cleaned_raw.csv
-python scripts/Upleveled+Data+Processing.py $2 temp
-python scripts/Create+Training+Data.py temp/cleaned_raw.csv temp "training_output"

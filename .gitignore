@@ -1,15 +1,12 @@
 data/training/*.csv
 data/cleaned/*.csv
-data/training/*.csv2
-data/cleaned/*.csv2
-*.csv
-*.csv2
-*.p
+code/predict/*.csv
+code/predict/*.csv2
+code/__pycache__
+code/predict/__pycache__
+code/train/__pycache__
+model/*.p
+
 __MACOSX/
-.ipynb_checkpoints/
 .DS_Store
-Pipeline/.ipynb_checkpoints/
-Model Training/.ipynb_checkpoints/
 data/.DS_Store
-Pipeline/__pycache__/
-Pipeline/*.pyc
