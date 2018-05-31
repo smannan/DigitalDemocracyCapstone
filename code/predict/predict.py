@@ -45,9 +45,6 @@ def print_withheld_recall(transition_dictionary, bill_table, recall_proximity_ti
     bill_ids = list(bill_table["bill_id"])
     times = list(bill_table["speaker_start_time"])
     
-    #p = re.compile("[A-Z]+[0-9]+")
-    #p.search(s)
-    
     for i in range(len(times)):
         for entry in transition_dictionary:
             if (math.fabs(entry["start"] - times[i]) < recall_proximity_time):
@@ -73,7 +70,7 @@ def evaluate_withheld_transcripts(withheld_training_transcripts, withheld_bill_t
         
         transition_dictionary = predict(new_transcript_subset, model_type)
         enhanced_dictionary = enhance_dictionary(new_transcript_subset, transition_dictionary)
-        shortened_dictionary = remove_unknown_suggested_bills(enhanced_dictionary)
+        shortened_dictionary = enhanced_dictionary #remove_unknown_suggested_bills(enhanced_dictionary)
         
         print("Actual Bill Discussion Starts:\n")
         

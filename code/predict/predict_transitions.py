@@ -46,12 +46,18 @@ def remove_unknown_suggested_bills(old_dictionary):
     new_dictionary = []
         
     for t in old_dictionary:
-        if t["suggested_bill"] != "NONE":
+        if len(t["suggested_bill"]) > 0:
             new_dictionary.append(t)
             
     return new_dictionary
 
 
+# enhanced dictionary = list of dicts containing transition utterances and
+# their associated bill names
+# collapse neighboring transitions by taking the first transition in a
+# sequence of adjacent transitions
+# captures all suggested bill names in a sequence
+# returns a list of dictionaries
 def collapse_dictionary(enhanced_dictionary):
     res = []
     i = 0
@@ -60,15 +66,21 @@ def collapse_dictionary(enhanced_dictionary):
     epsilon = 5
 
     while i < n:
+        all_bill_names = []
         j = i + 1
-        res.append(enhanced_dictionary[i])
+        row = enhanced_dictionary[i]
+
+        all_bill_names += (enhanced_dictionary[i]['suggested_bill'])
 
         while j < n and math.fabs(enhanced_dictionary[j]['start']
          - enhanced_dictionary[i]['end']) < epsilon:
             j += 1
             i += 1
+            all_bill_names += (enhanced_dictionary[i]['suggested_bill'])
 
         i = j
+        row['suggested_bill'] = all_bill_names
+        res.append(row)
 
     return res
 
@@ -98,7 +110,7 @@ def enhance_dictionary_helper(combined):
             enhanced_dictionary.append({
                     'start':start_list[i], 'end':end_list[i],
                     'video_id':video_id_list[i], 'text':original_text_list[i],
-                    'suggested_bill':bill_names_list[i][0]})
+                    'suggested_bill':bill_names_list[i]})
             i += 1
             continue
 
@@ -110,7 +122,7 @@ def enhance_dictionary_helper(combined):
                 enhanced_dictionary.append({
                     'start':start_list[i], 'end':end_list[i],
                     'video_id':video_id_list[i], 'text':original_text_list[i],
-                    'suggested_bill':bill_names_list[j][0]})
+                    'suggested_bill':bill_names_list[j]})
                 i = j+1
                 found_associated_bill_id = False
                 break
@@ -122,11 +134,11 @@ def enhance_dictionary_helper(combined):
         
         #at this point, the transition utterance has no associated bill ids in the window
         #so we likely want to disregard the transition as a possibility
-        #for now we simply enter it with the suggested_bill field having value 'NONE'
+        #for now we simply enter it with the suggested_bill field having value []
         enhanced_dictionary.append({
                     'start':start_list[i], 'end':end_list[i],
                     'video_id':video_id_list[i], 'text':original_text_list[i],
-                    'suggested_bill':'NONE'})
+                    'suggested_bill':[]})
         i = j
             
     return enhanced_dictionary
