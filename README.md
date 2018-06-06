@@ -39,7 +39,7 @@ containing predicted transitions, suggested bill names, and utterance start and 
 
 ## Data
 
-Contains the data necessary for the pipeline.
+The data directory contains original, cleaned, and training data. The cleaned data contains the processed raw and upleveled data. If the user is creating a testing model the cleaned data will not contain the user-specified withheld transcripts. The training directory contains the utterance data and label (transition or non-transition). Similarly, if the user is creating a testing model, a withheld training set with removed transcripts will be created instead.
 
 ## Model
 
