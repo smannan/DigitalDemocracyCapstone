@@ -43,5 +43,5 @@ Contains the data necessary for the pipeline.
 
 ## Model
 
-Contains models.
+The naive bayes model and word vectorizer are saved to a pickle files whereas the neural network model is saved to a single HDF5 file. These models are created in the training portion and used in the prediction portion.
 
