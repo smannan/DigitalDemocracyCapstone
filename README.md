@@ -2,6 +2,14 @@
 
 This project identifies transition points from legislative transcripts. 
 
+## Training models
+
+Navigate to code/train and run either TEMP_generate_production_model.py or TEMP_generate_testing_model.py
+
+## Generating predictions
+
+Navigate to code/predict and run either TEMP_predict_from_production_model.py or TEMP_predict_from_testing_model.py
+
 ## Code
 
 This directory contains all source code for the project. 
