@@ -2,6 +2,16 @@ import sys
 import numpy as np
 import pandas as pd
 
+from keras.utils.np_utils import to_categorical
+
+from keras.layers import Embedding, LSTM, Dense, Conv1D, MaxPooling1D
+from keras.layers import Dropout, Activation, Merge, Flatten, Reshape, Concatenate
+from keras.models import Sequential, Model
+from keras.preprocessing.text import Tokenizer
+from keras.preprocessing.sequence import pad_sequences
+from keras.callbacks import ModelCheckpoint, Callback,EarlyStopping
+from keras.layers import Bidirectional, Input
+
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.feature_extraction.text import TfidfTransformer
 from sklearn.model_selection import train_test_split
@@ -12,6 +22,7 @@ import matplotlib.pyplot as plt
 
 import pickle
 
+# train_model("../../data/training/training.csv", "../../model", "NN")
 
 # split dataset evenly based on labels
 def split_test_train(total, stratify_col):
@@ -143,7 +154,7 @@ def create_naive_bayes_model(NB_features, x_train, x_test, y_train, y_test):
 #Define Neural Network Model
 
 
-def create_neural_network_model(x_train, x_test, y_train, y_test):
+def create_neural_network_model(x_train, x_test, y_train, y_test, output_folder):
     #tokenize and pad word length
     tokenizer = Tokenizer(num_words=40000)
     tokenizer.fit_on_texts(x_train)
@@ -160,30 +171,37 @@ def create_neural_network_model(x_train, x_test, y_train, y_test):
     model.add(Dense(2, activation='sigmoid')) #fully connected layer
     model.compile(loss='binary_crossentropy', optimizer='rmsprop', metrics=['accuracy'])
     
-    filepath="weights.best.hdf5"
-    checkpoint = ModelCheckpoint(filepath, monitor='val_acc', verbose=1, save_best_only=True, mode='max')
+    filepath= output_folder + "nn_model.hdf5"
+    checkpoint = ModelCheckpoint(filepath, monitor='val_acc', verbose=1, 
+     save_best_only=True, mode='max')
     callbacks_list = [checkpoint]
 
     model.fit(padded, pred,validation_split=0.3, epochs = 50, callbacks = callbacks_list)
 
-    
+
 #Callable Logic
 
 
 def train_model(input_file, output_folder, model_type="NB", NB_features="n-gram"):
     print("Training model...")
+
     train = pd.read_table(input_file, sep="~")[['video_id', 'transition_value', 'text']]
-    x_train, x_test, y_train, y_test = split_test_train(train[['text', 'transition_value']], "transition_value")
+
+    x_train, x_test, y_train, y_test = split_test_train(
+        train[['text', 'transition_value']], "transition_value")
+
     verify_train_test_split(train, x_train, y_train, x_test, y_test)
     
     if (model_type == "NN"):
         #TODO
-        raise Exception("Neural network not supported yet.")
-        create_neural_network_model(x_train, x_test, y_train, y_test)
+        #raise Exception("Neural network not supported yet.")
+        create_neural_network_model(x_train, x_test, y_train, y_test, output_folder)
+
     elif (model_type == "NB"):
         model, count_vect = create_naive_bayes_model(NB_features, x_train, x_test, y_train, y_test)
         pickle.dump(model, open(output_folder + "/nb_model.p", "wb"))
         pickle.dump(count_vect, open(output_folder + "/nb_count_vect.p", "wb"))
+
     else:
         raise Exception("Not a valid model type.")
         
