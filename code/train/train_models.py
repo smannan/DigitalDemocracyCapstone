@@ -5,7 +5,7 @@ import pandas as pd
 from keras.utils.np_utils import to_categorical
 
 from keras.layers import Embedding, LSTM, Dense, Conv1D, MaxPooling1D
-from keras.layers import Dropout, Activation, Merge, Flatten, Reshape, Concatenate
+from keras.layers import Dropout, Activation, Flatten, Reshape, Concatenate # Merge
 from keras.models import Sequential, Model
 from keras.preprocessing.text import Tokenizer
 from keras.preprocessing.sequence import pad_sequences
@@ -22,7 +22,10 @@ import matplotlib.pyplot as plt
 
 import pickle
 
-# train_model("../../data/training/training.csv", "../../model", "NN")
+# train model in python interpreter
+# python3
+# from train_models import *
+# train_model("../../data/training/training_withheld.csv", "../../model", "NN")
 
 # split dataset evenly based on labels
 def split_test_train(total, stratify_col):
@@ -106,12 +109,6 @@ def transform_ngram(start, stop, x_train, x_test):
     ngram_vectorizer = CountVectorizer(analyzer='word', ngram_range=(start, stop))
     counts = ngram_vectorizer.fit(np.hstack((x_train)))
     
-    #print ("Number of transformed features {0}\n"
-    # .format(len(ngram_vectorizer.get_feature_names())))
-    
-    #print ("First 10 features\n{0}"
-    # .format('\n'.join(ngram_vectorizer.get_feature_names()[-10:])))
-    
     X_train_counts = counts.transform(x_train)
     X_test_counts = counts.transform(x_test)
     
@@ -158,17 +155,20 @@ def create_neural_network_model(x_train, x_test, y_train, y_test, output_folder)
     #tokenize and pad word length
     tokenizer = Tokenizer(num_words=40000)
     tokenizer.fit_on_texts(x_train)
+
+    pickle.dump(tokenizer, open(output_folder + "/nn_count_vect.p", "wb"))
+
     sequences = tokenizer.texts_to_sequences(x_train)
 
-    padded = pad_sequences(sequences, maxlen = 44)
-    pred = to_categorical(y_train)
+    padded = pad_sequences(sequences, maxlen = 250)
+    pred = y_train
     
     model = Sequential()
-    model.add(Embedding(40000, 150, input_length=44))
+    model.add(Embedding(40000, 150, input_length=250))
     model.add(Conv1D(64, 5, activation='relu'))
     model.add(MaxPooling1D(pool_size=4))
     model.add(LSTM(150, dropout=0.2, recurrent_dropout=0.5))
-    model.add(Dense(2, activation='sigmoid')) #fully connected layer
+    model.add(Dense(1, activation='sigmoid')) #fully connected layer
     model.compile(loss='binary_crossentropy', optimizer='rmsprop', metrics=['accuracy'])
     
     filepath= output_folder + "nn_model.hdf5"
@@ -176,7 +176,10 @@ def create_neural_network_model(x_train, x_test, y_train, y_test, output_folder)
      save_best_only=True, mode='max')
     callbacks_list = [checkpoint]
 
-    model.fit(padded, pred,validation_split=0.3, epochs = 50, callbacks = callbacks_list)
+    model.fit(padded, pred,validation_split=0.3, epochs = 30, callbacks = callbacks_list)
+    model.save(output_folder + '/nn_model.hdf5') 
+
+    return model, tokenizer
 
 
 #Callable Logic
@@ -193,9 +196,9 @@ def train_model(input_file, output_folder, model_type="NB", NB_features="n-gram"
     verify_train_test_split(train, x_train, y_train, x_test, y_test)
     
     if (model_type == "NN"):
-        #TODO
-        #raise Exception("Neural network not supported yet.")
-        create_neural_network_model(x_train, x_test, y_train, y_test, output_folder)
+        model, tokenizer = create_neural_network_model(x_train, x_test, y_train, y_test, output_folder)
+        # create_neural_network_model1(x_train, x_test, y_train, y_test, output_folder)
+        # create_neural_network_model2(x_train, x_test, y_train, y_test, output_folder)
 
     elif (model_type == "NB"):
         model, count_vect = create_naive_bayes_model(NB_features, x_train, x_test, y_train, y_test)
