@@ -7,14 +7,17 @@ import pickle
 import re
 import sys
 import textedit
+
 from bs4 import BeautifulSoup
+from keras.preprocessing.text import Tokenizer
+from keras.preprocessing.sequence import pad_sequences
+from keras.models import load_model
 
 from code.process_dataset.bill_id_replacement import find_bill_names
 
-
 THRESHOLD_PROBABILITY = .5
 
-
+# get predictions from naive bayes model
 def predict_entire_transcript(transcripts, model, count_vect):
     transcripts_test = count_vect.transform(transcripts['text'])
     
@@ -38,9 +41,20 @@ def predict_from_naive_bayes(transcript, model_folder):
     return transition_dictionary
 
 
-def predict_from_neural_network():
-    pass
+def predict_from_neural_network(transcript, model_folder, maxlen=250, thresh=THRESHOLD_PROBABILITY):
+    model = load_model(model_folder + "/nn_model.hdf5")
+    tokenizer = pickle.load(open(model_folder + "/nn_count_vect.p", "rb"))
 
+    sequences = tokenizer.texts_to_sequences(transcript['text'])
+    test_padded = pad_sequences(sequences, maxlen = maxlen)
+
+    prediction_values = [1 if p > thresh else 0 for p in model.predict(test_padded)]
+    transcript["prediction"] = prediction_values
+    predicted_transitions = transcript[transcript["prediction"]==1]
+
+    transition_dictionary = predicted_transitions[["video_id", "start", "end", "text"]].to_dict(orient="records")
+    
+    return transition_dictionary
 
 def remove_unknown_suggested_bills(old_dictionary):
     new_dictionary = []
@@ -174,8 +188,7 @@ def predict_transitions(original_new_transcript, processed_new_transcript, model
         transition_dictionary = predict_from_naive_bayes(processed_new_transcript, model_folder)
 
     elif (model_type == "NN"):
-        raise Exception("Neural network not supported yet.")
-        predict_from_neural_network()
+        transition_dictionary = predict_from_neural_network(processed_new_transcript, model_folder)
 
     else:
         raise Exception("Model type not defined.")

@@ -35,6 +35,8 @@ def process_raw_transcript_data(new_transcript):
 def predict(new_video_transcript_dictionary, model_type,
             model_folder="../../model"):
     
+    # adds utterance context and replaces bill ids 
+    # returns data frame of transcripts
     processed_new_transcript = process_raw_transcript_data(new_video_transcript_dictionary)
     
     return predict_transitions(new_video_transcript_dictionary, processed_new_transcript, model_type, model_folder)
@@ -51,18 +53,30 @@ def print_withheld_accuracy(transition_dictionary, bill_table, proximity_time):
                 r += 1
                 break
     
-    print("Recall within {0} seconds: {1}/{2} = {3}".format(proximity_time, r, len(times), 1.0*r/len(times)))
+    recall = (1.0 * r) / len(times)
+    precision = (1.0 * r) / len(transition_dictionary)
+
+    print("Recall within {0} seconds: {1}/{2} = {3}".format(proximity_time, r, len(times), recall))
     print("Precision within {0} seconds: {1}/{2} = {3}".format(proximity_time, r, len(transition_dictionary),
-                                                               1.0*r/len(transition_dictionary)))
+                                                               precision))
     print()
-    
+
+    return recall, precision  
 
 def evaluate_withheld_transcripts(withheld_training_transcripts, model_type,
                                   withheld_bill_times_table="../../data/cleaned/upleveled_bill_times_table_withheld.csv",
                                   model_folder="../../model"):
+    
     new_transcript = pd.read_csv(withheld_training_transcripts, sep="~")[["start", "end", "text", "video_id"]]
     bill_times_table = pd.read_csv(withheld_bill_times_table, sep="~")
     video_ids = np.unique(new_transcript[["video_id"]])
+
+    recall_results = { 15: 0.0, 30 : 0.0, 60: 0.0 }
+    precision_results = { 15: 0.0, 30 : 0.0, 60: 0.0 }
+
+    print("\n--------------------")
+    print("Model Type: " + str(model_type))
+    print("--------------------\n")
     
     for video_id in video_ids:
         new_transcript_subset = new_transcript[new_transcript["video_id"]==video_id].to_dict("records")
@@ -74,7 +88,7 @@ def evaluate_withheld_transcripts(withheld_training_transcripts, model_type,
         
         transition_dictionary = predict(new_transcript_subset, model_type)
         enhanced_dictionary = enhance_dictionary(new_transcript_subset, transition_dictionary)
-        shortened_dictionary = enhanced_dictionary #remove_unknown_suggested_bills(enhanced_dictionary)
+        shortened_dictionary = enhanced_dictionary
         
         print("Actual Bill Discussion Starts:\n")
         
@@ -89,6 +103,18 @@ def evaluate_withheld_transcripts(withheld_training_transcripts, model_type,
             print(entry)
         
         print()
-        print_withheld_accuracy(shortened_dictionary, bill_times_table_subset, 15)
-        print_withheld_accuracy(shortened_dictionary, bill_times_table_subset, 30)
-        print_withheld_accuracy(shortened_dictionary, bill_times_table_subset, 60)
+
+        for time in [15, 30, 60]:
+            rec, prec = print_withheld_accuracy(shortened_dictionary, bill_times_table_subset, time)
+            recall_results[time] += rec
+            precision_results[time] += prec
+
+        #print_withheld_accuracy(shortened_dictionary, bill_times_table_subset, 15)
+        #print_withheld_accuracy(shortened_dictionary, bill_times_table_subset, 30)
+        #print_withheld_accuracy(shortened_dictionary, bill_times_table_subset, 60)
+
+    for time in [15, 30, 60]:
+        print ('Average recall within {0} seconds = {1}'.format(time, float(recall_results[time]) / len(video_ids) ))
+        print ('Average precision within {0} seconds = {1}'.format(time, float(precision_results[time]) / len(video_ids)  )) 
+
+        print ()
